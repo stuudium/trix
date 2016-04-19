@@ -1,7 +1,7 @@
 #= require trix/operations/image_preload_operation
 
 class Trix.Attachment extends Trix.Object
-  @previewablePattern: /^image(\/(gif|png|jpe?g)|$)/
+  @previewablePattern: /^previews-disabled-image(\/(gif|png|jpe?g)|$)/
 
   @attachmentForFile: (file) ->
     attributes = @attributesForFile(file)
