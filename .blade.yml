@@ -23,7 +23,7 @@ plugins:
     browsers:
       Google Chrome:
         os: Mac, Windows
-        version: [48, 47]
+        version: -2
       Firefox:
         os: Mac, Windows
         version: -2
@@ -35,6 +35,6 @@ plugins:
       Internet Explorer:
         version: 11
       iPhone:
-        version: [9.1, 8.4]
+        version: [9.2, 8.4]
       Motorola Droid 4 Emulator:
         version: [5.1, 4.4]
