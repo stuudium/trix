@@ -8,7 +8,10 @@ gem 'eco'
 gem 'sass'
 gem 'uglifier'
 
-gem 'blade', '~> 0.5.0'
-gem 'blade-sauce_labs_plugin', '~> 0.5.1'
+gem 'blade'
+gem 'blade-sauce_labs_plugin'
+# Lock to 1.1.1 until the fix for https://github.com/faye/faye/issues/394 is released
+gem 'faye', '1.1.1'
+
 gem 'github_api'
 gem 'aws-sdk'

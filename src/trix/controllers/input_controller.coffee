@@ -3,7 +3,8 @@
 #= require trix/controllers/composition_input_controller
 
 {handleEvent, findClosestElementFromNode, findElementFromContainerAndOffset,
-  defer, makeElement, innerElementIsActive, summarizeStringChange, objectsAreEqual} = Trix
+  defer, makeElement, innerElementIsActive, summarizeStringChange, objectsAreEqual,
+  tagName} = Trix
 
 class Trix.InputController extends Trix.BasicObject
   pastedFileCount = 0
@@ -75,14 +76,21 @@ class Trix.InputController extends Trix.BasicObject
           @requestReparse()
         @reset()
 
-  mutationIsExpected: (mutationSummary) ->
-    if @inputSummary
-      if @inputSummary.preferDocument?
-        @inputSummary.preferDocument
-      else
-        unhandledAddition = mutationSummary.textAdded isnt @inputSummary.textAdded
-        unhandledDeletion = mutationSummary.textDeleted? and not @inputSummary.didDelete
-        not (unhandledAddition or unhandledDeletion)
+  mutationIsExpected: ({textAdded, textDeleted}) ->
+    return true if @inputSummary.preferDocument
+
+    unhandledAddition = textAdded isnt @inputSummary.textAdded
+    unhandledDeletion = textDeleted? and not @inputSummary.didDelete
+
+    # Expect newline removal at the end of a block caused
+    # by the extra <br> rendered to represent them.
+    if textDeleted is "\n" and unhandledDeletion
+      if textAdded and not unhandledAddition
+        if range = @getSelectedRange()
+          if @responder?.positionIsBlockBreak(range[1] + textAdded.length)
+            unhandledDeletion = false
+
+    not (unhandledAddition or unhandledDeletion)
 
   unlessMutationOccurs: (callback) ->
     mutationCount = @mutationCount
@@ -141,13 +149,24 @@ class Trix.InputController extends Trix.BasicObject
         @responder?.insertString(character)
         @setInputSummary(textAdded: character, didDelete: @selectionIsExpanded())
 
+    textInput: (event) ->
+      # Handle autocapitalization
+      {data} = event
+      {textAdded} = @inputSummary
+      if textAdded and textAdded isnt data and textAdded.toUpperCase() is data
+        range = @getSelectedRange()
+        @setSelectedRange([range[0], range[1] + textAdded.length])
+        @responder?.insertString(data)
+        @setInputSummary(textAdded: data)
+        @setSelectedRange(range)
+
     dragenter: (event) ->
       event.preventDefault()
 
     dragstart: (event) ->
       target = event.target
       @serializeSelectionToDataTransfer(event.dataTransfer)
-      @draggedRange = @responder?.getSelectedRange()
+      @draggedRange = @getSelectedRange()
       @delegate?.inputControllerDidStartDrag?()
 
     dragover: (event) ->
@@ -212,7 +231,16 @@ class Trix.InputController extends Trix.BasicObject
           @delegate?.inputControllerDidPaste(pasteData)
         return
 
-      if html = paste.getData("text/html")
+      if dataTransferIsPlainText(paste)
+        string = paste.getData("text/plain")
+        pasteData.string = string
+        @setInputSummary(textAdded: string, didDelete: @selectionIsExpanded())
+        @delegate?.inputControllerWillPasteText(pasteData)
+        @responder?.insertString(string)
+        @requestRender()
+        @delegate?.inputControllerDidPaste(pasteData)
+
+      else if html = paste.getData("text/html")
         pasteData.html = html
         @delegate?.inputControllerWillPasteText(pasteData)
         @responder?.insertHTML(html)
@@ -224,14 +252,6 @@ class Trix.InputController extends Trix.BasicObject
         @setInputSummary(textAdded: href, didDelete: @selectionIsExpanded())
         @delegate?.inputControllerWillPasteText(pasteData)
         @responder?.insertText(Trix.Text.textForStringWithAttributes(href, {href}))
-        @requestRender()
-        @delegate?.inputControllerDidPaste(pasteData)
-
-      else if string = paste.getData("text/plain")
-        pasteData.string = string
-        @setInputSummary(textAdded: string, didDelete: @selectionIsExpanded())
-        @delegate?.inputControllerWillPasteText(pasteData)
-        @responder?.insertString(string)
         @requestRender()
         @delegate?.inputControllerDidPaste(pasteData)
 
@@ -374,7 +394,7 @@ class Trix.InputController extends Trix.BasicObject
     types["Files"] or types["application/x-trix-document"] or types["text/html"] or types["text/plain"]
 
   getPastedHTMLUsingHiddenElement: (callback) ->
-    selectedRange = @responder?.getSelectedRange()
+    selectedRange = @getSelectedRange()
 
     style =
       position: "absolute"
@@ -389,9 +409,11 @@ class Trix.InputController extends Trix.BasicObject
     requestAnimationFrame =>
       html = element.innerHTML
       document.body.removeChild(element)
-      @responder?.setSelectedRange(selectedRange)
+      @setSelectedRange(selectedRange)
       callback(html)
 
+  @proxyMethod "responder?.getSelectedRange"
+  @proxyMethod "responder?.setSelectedRange"
   @proxyMethod "responder?.expandSelectionInDirection"
   @proxyMethod "responder?.selectionIsInCursorTarget"
   @proxyMethod "responder?.selectionIsExpanded"
@@ -411,6 +433,18 @@ keyEventIsKeyboardCommand = (event) ->
 pasteEventIsCrippledSafariHTMLPaste = (event) ->
   if types = event.clipboardData?.types
     "text/html" not in types and ("com.apple.webarchive" in types or "com.apple.flat-rtfd" in types)
+
+dataTransferIsPlainText = (dataTransfer) ->
+  text = dataTransfer.getData("text/plain")
+  html = dataTransfer.getData("text/html")
+
+  if text and html
+    element = makeElement("div")
+    element.innerHTML = html
+    if element.textContent is text
+      not element.querySelector(":not(meta)")
+  else
+    text?.length
 
 testTransferData = "application/x-trix-feature-detection": "test"
 

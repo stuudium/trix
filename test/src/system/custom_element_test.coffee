@@ -1,4 +1,4 @@
-{after, assert, clickElement, clickToolbarButton, createFile, defer, insertImageAttachment, moveCursor, pasteContent, test, testGroup, triggerEvent, typeCharacters, typeInToolbarDialog} = Trix.TestHelpers
+{after, assert, clickElement, clickToolbarButton, createFile, defer, insertImageAttachment, moveCursor, pasteContent, skip, test, testGroup, triggerEvent, typeCharacters, typeInToolbarDialog} = Trix.TestHelpers
 
 testGroup "Custom element API", template: "editor_empty", ->
   test "files are accepted by default", ->
@@ -201,6 +201,24 @@ testGroup "Custom element API", template: "editor_empty", ->
                 assert.equal blurEventCount, 1
                 assert.equal focusEventCount, 1
                 done()
+
+  # Selenium doesn't seem to focus windows properly in some browsers (FF 47 on OS X)
+  # so skip this test when unfocused pending a better solution.
+  testOrSkip = if document.hasFocus() then test else skip
+  testOrSkip "element triggers custom focus event when autofocusing", (done) ->
+    element = document.createElement("trix-editor")
+    element.setAttribute("autofocus", "")
+
+    focusEventCount = 0
+    element.addEventListener "trix-focus", -> focusEventCount++
+
+    container = document.getElementById("trix-container")
+    container.innerHTML = ""
+    container.appendChild(element)
+
+    element.addEventListener "trix-initialize", ->
+      assert.equal focusEventCount, 1
+      done()
 
   test "editor resets to its original value on form reset", (expectDocument) ->
     element = getEditorElement()
