@@ -89,14 +89,14 @@ helpers.extend
   endComposition: (data, callback) ->
     element = document.activeElement
     helpers.triggerEvent(element, "compositionupdate", data: data)
-    helpers.triggerEvent(element, "input")
-    helpers.triggerEvent(element, "compositionend", data: data)
-    helpers.triggerEvent(element, "input")
 
     node = document.createTextNode(data)
     helpers.insertNode(node)
     helpers.selectNode(node)
-    helpers.collapseSelection("right", callback)
+    helpers.collapseSelection "right", ->
+      helpers.triggerEvent(element, "input")
+      helpers.triggerEvent(element, "compositionend", data: data)
+      helpers.defer(callback)
 
   clickElement: (element, callback) ->
     if helpers.triggerEvent(element, "mousedown")
@@ -169,7 +169,8 @@ simulateKeypress = (keyName, callback) ->
 
 deleteInDirection = (direction, callback) ->
   if helpers.selectionIsCollapsed()
-    helpers.expandSelection direction, ->
+    getComposition().expandSelectionInDirection(if direction is "left" then "backward" else "forward")
+    helpers.defer ->
       helpers.deleteSelection()
       callback()
   else

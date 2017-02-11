@@ -56,6 +56,19 @@ testGroup "Custom element API", template: "editor_empty", ->
     attachment.setAttributes(width: 9876)
     assert.deepEqual events, ["trix-attachment-edit", "trix-change"]
 
+  test "editing the document in a trix-attachment-add handler doesn't trigger trix-attachment-add again", ->
+    element = getEditorElement()
+    composition = getComposition()
+    eventCount = 0
+
+    element.addEventListener "trix-attachment-add", ->
+      if eventCount++ is 0
+        element.editor.setSelectedRange([0,1])
+        element.editor.activateAttribute("bold")
+
+    composition.insertFile(createFile())
+    assert.equal eventCount, 1
+
   test "element triggers trix-change events when the document changes", (done) ->
     element = getEditorElement()
     eventCount = 0
@@ -70,6 +83,42 @@ testGroup "Custom element API", template: "editor_empty", ->
           clickToolbarButton action: "undo", ->
             assert.equal eventCount, 5
             done()
+
+  test "element triggers trix-change event after toggling attributes", (done) ->
+    element = getEditorElement()
+    editor = element.editor
+
+    afterChangeEvent = (edit, callback) ->
+      element.addEventListener "trix-change", handler = (event) ->
+        element.removeEventListener("trix-change", handler)
+        callback(event)
+      edit()
+
+    typeCharacters "hello", ->
+      edit = -> editor.activateAttribute("quote")
+      afterChangeEvent edit, ->
+        assert.ok editor.attributeIsActive("quote")
+
+        edit = -> editor.deactivateAttribute("quote")
+        afterChangeEvent edit, ->
+          assert.notOk editor.attributeIsActive("quote")
+
+          editor.setSelectedRange([0, 5])
+          edit = -> editor.activateAttribute("bold")
+          afterChangeEvent edit, ->
+            assert.ok editor.attributeIsActive("bold")
+
+            edit = -> editor.deactivateAttribute("bold")
+            afterChangeEvent edit, ->
+              assert.notOk editor.attributeIsActive("bold")
+              done()
+
+  test "disabled attributes aren't considered active", (done) ->
+    {editor} = getEditorElement()
+    editor.activateAttribute("heading1")
+    assert.notOk editor.attributeIsActive("code")
+    assert.notOk editor.attributeIsActive("quote")
+    done()
 
   test "element triggers trix-selection-change events when the location range changes", (done) ->
     element = getEditorElement()
@@ -170,8 +219,8 @@ testGroup "Custom element API", template: "editor_empty", ->
       assert.equal eventCount, 0
       clickToolbarButton attribute: "bullet", ->
         assert.equal eventCount, 1
-        assert.equal actions.decreaseBlockLevel, true
-        assert.equal actions.increaseBlockLevel, false
+        assert.equal actions.decreaseNestingLevel, true
+        assert.equal actions.increaseNestingLevel, false
         done()
 
   test "element triggers custom focus and blur events", (done) ->
@@ -219,6 +268,22 @@ testGroup "Custom element API", template: "editor_empty", ->
     element.addEventListener "trix-initialize", ->
       assert.equal focusEventCount, 1
       done()
+
+  test "element serializes HTML after attribute changes", (done) ->
+    element = getEditorElement()
+    serializedHTML = element.value
+
+    typeCharacters "a", ->
+      assert.notEqual serializedHTML, element.value
+      serializedHTML = element.value
+
+      clickToolbarButton attribute: "quote", ->
+        assert.notEqual serializedHTML, element.value
+        serializedHTML = element.value
+
+        clickToolbarButton attribute: "quote", ->
+          assert.notEqual serializedHTML, element.value
+          done()
 
   test "editor resets to its original value on form reset", (expectDocument) ->
     element = getEditorElement()

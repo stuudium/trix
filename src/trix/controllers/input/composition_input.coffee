@@ -1,4 +1,4 @@
-class Trix.CompositionInputController extends Trix.BasicObject
+class Trix.CompositionInput extends Trix.BasicObject
   constructor: (@inputController) ->
     {@responder, @delegate, @inputSummary} = @inputController
     @data = {}
@@ -27,36 +27,30 @@ class Trix.CompositionInputController extends Trix.BasicObject
     @forgetPlaceholder()
 
     if @canApplyToDocument()
+      @setInputSummary(preferDocument: true)
       @delegate?.inputControllerWillPerformTyping()
       @responder?.setSelectedRange(@range)
       @responder?.insertString(@data.end)
-      @setInputSummary(preferDocument: true)
-      @setFinalSelection()
+      @responder?.setSelectedRange(@range[0] + @data.end.length)
 
     else if @data.start? or @data.update?
       @requestReparse()
       @inputController.reset()
+
+  getEndData: ->
+    @data.end
+
+  isEnded: ->
+    @getEndData()?
 
   # Private
 
   canApplyToDocument: ->
     @data.start?.length is 0 and @data.end?.length > 0 and @range?
 
-  # Fix for compositions remaining selected in Firefox:
-  # If the last composition update is the same as the final composition then
-  # it's likely there won't be another mutation (and subsequent render + selection change).
-  # In that case, collapse the selection and request a render.
-  setFinalSelection: ->
-    if @data.end? and @data.end is @data.update
-      @unlessMutationOccurs =>
-        if @selectionIsExpanded()
-          @responder?.setSelection(@range[0] + @data.end.length)
-          @requestRender()
-
   @proxyMethod "inputController.setInputSummary"
   @proxyMethod "inputController.requestRender"
   @proxyMethod "inputController.requestReparse"
-  @proxyMethod "inputController.unlessMutationOccurs"
   @proxyMethod "responder?.selectionIsExpanded"
   @proxyMethod "responder?.insertPlaceholder"
   @proxyMethod "responder?.selectPlaceholder"

@@ -6,6 +6,7 @@ Trix.config.lang =
   captionPlaceholder: "Trüki pealkiri siia…"
   captionPrompt: "Muuda pealkirja"
   code: "Kood"
+  heading1: "Pealkiri"
   indent: "Suurenda taanet"
   italic: "Kaldkiri"
   link: "Lingi"

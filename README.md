@@ -15,9 +15,7 @@ Trix sidesteps these inconsistencies by treating `contenteditable` as an I/O dev
 
 ### Built for the Modern Web
 
-Trix supports all evergreen, self-updating desktop and mobile browsers.
-
-![Browser Test Status](https://s3.amazonaws.com/trix-depot/test-status-images/trix-current.svg)
+<details><summary>Trix supports all evergreen, self-updating desktop and mobile browsers.</summary><img src="https://s3.amazonaws.com/trix-depot/test-status-images/trix.svg"></details>
 
 Trix is built with emerging web standards, notably [Custom Elements](http://www.w3.org/TR/custom-elements/), [Mutation Observer](https://dom.spec.whatwg.org/#mutation-observers), and [Promises](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-promise-objects). Eventually we expect all browsers to implement these standards. In the meantime, Trix includes [polyfills](https://en.wikipedia.org/wiki/Polyfill) for missing functionality.
 
@@ -246,11 +244,11 @@ element.editor.setSelectedRange([0, 4])
 element.editor.deleteInDirection("forward")
 ```
 
-## Working With Attributes and Indentation
+## Working With Attributes and Nesting
 
 Trix represents formatting as sets of _attributes_ applied across ranges of a document.
 
-By default, Trix supports the inline attributes `bold`, `italic`, `href`, and `strike`, and the block-level attributes `quote`, `code`, `bullet`, and `number`.
+By default, Trix supports the inline attributes `bold`, `italic`, `href`, and `strike`, and the block-level attributes `heading1`, `quote`, `code`, `bullet`, and `number`.
 
 ### Applying Formatting
 
@@ -288,14 +286,14 @@ element.editor.activateAttribute("italic")
 element.editor.insertString("This is italic")
 ```
 
-### Adjusting the Indentation Level
+### Adjusting the Nesting Level
 
-To adjust the indentation level of block-level attributes, call the `editor.increaseIndentationLevel` and `editor.decreaseIndentationLevel` methods.
+To adjust the nesting level of quotes, bulleted lists, or numbered lists, call the `editor.increaseNestingLevel` and `editor.decreaseNestingLevel` methods.
 
 ```js
 element.editor.activateAttribute("quote")
-element.editor.increaseIndentationLevel()
-element.editor.decreaseIndentationLevel()
+element.editor.increaseNestingLevel()
+element.editor.decreaseNestingLevel()
 ```
 
 ## Using Undo and Redo
@@ -381,4 +379,4 @@ Only commit changes to Trix’s source (everything except the compiled files in 
 
 ---
 
-© 2016 Basecamp, LLC.
+© 2017 Basecamp, LLC.
