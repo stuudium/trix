@@ -49,7 +49,7 @@ trix-toolbar {
         background: #cbeefa;
       }
 
-      &.icon {
+      &.trix-icon {
         width: 2.6em;
         height: 1.6em;
         max-width: calc(0.8em + 4vw);
@@ -104,7 +104,7 @@ trix-toolbar {
         }
       }
 
-      &:not(.icon) {
+      &:not(.trix-icon) {
         font-size: $font-size-normal;
         font-weight: 600;
         white-space: nowrap;
