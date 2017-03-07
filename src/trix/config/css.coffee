@@ -8,5 +8,5 @@ Trix.config.css =
       captionEditor: "caption-editor"
       editingCaption: "caption-editing"
       progressBar: "progress"
-      removeButton: "remove icon"
+      removeButton: "remove trix-icon"
       size: "size"
